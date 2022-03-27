@@ -14,11 +14,11 @@ def handleClient(msg, conn):
 
 
 print("Server address is " + SERVER)
-print("Creating udp socket and binding to " +
-      str(ADDR[0]) + ", " + str(ADDR[1]))
+print("Creating socket...")
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+print("Binding to " + str(ADDR[0]) + ", " + str(ADDR[1]))
 server.bind(ADDR)
-print("Starting accepting connections")
+print("Starting receving connections")
 while True:
     print("Waiting client connction...")
     msg, conn = server.recvfrom(BUFFER_SIZE)
