@@ -1,4 +1,3 @@
-from audioop import add
 import socket
 import threading
 
@@ -13,11 +12,14 @@ def handleClient(msg, conn):
     print("Message from client: " + str(msg.decode(FORMAT)))
 
 
-print("Server address is " + SERVER)
+print("Server ip is " + SERVER)
+
 print("Creating socket...")
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 print("Binding to " + str(ADDR[0]) + ", " + str(ADDR[1]))
 server.bind(ADDR)
+
 print("Starting receving connections")
 while True:
     print("Waiting client connction...")
