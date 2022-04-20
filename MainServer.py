@@ -1,6 +1,4 @@
-from operator import xor
 import socket
-from tabnanny import check
 import threading
 import struct
 

@@ -1,10 +1,5 @@
-from distutils.command.build_py import build_py_2to3
-from email import message
-from pydoc import cli
 import socket
 import struct
-import ctypes
-import sunau
 
 FORMAT = "utf-8"
 PORT = 5050
