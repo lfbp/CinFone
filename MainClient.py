@@ -68,7 +68,7 @@ while True:
         ack = str(ack.decode(FORMAT))
         if ack == ACK:
             print("ACK RECIEVED")
-            currentState = WAIT_CALL_0
+            currentState = WAIT_CALL_1
     elif currentState == WAIT_CALL_1:
         print("implement wait for above call 1")
         break
