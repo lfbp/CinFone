@@ -1,5 +1,6 @@
 from operator import xor
 import socket
+from tabnanny import check
 import threading
 import struct
 
@@ -8,47 +9,49 @@ BUFFER_SIZE = 2048
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
+ACK = "ACK"
 
-
-def checkSumReceiver(data, checksum):
+def isCorrupted(data, checksum):
     sum = 0
     for i in range(0,len(data),2):
         if i + 1 < len(data):
-            value = 0
-            value = (data[i])
-            value << 8
-            value += data[i+1]                
-            sum += value
+            byteValue = bytearray(2)
+            byteValue[0] = (data[i]) 
+            byteValue[1] = (data[i+1])
+            value = int.from_bytes(byteValue, "big")             
+            sum = (sum + value) % 65535
         else:
-            value = 0
-            value = int(data[i])
-            value << 8
-            sum += value
-    sum = sum + (1 << 32)
-    sum = sum + checksum
-    sum = sum ^ 0xfff
+            byteValue = bytearray(2)
+            byteValue[0] = (data[i]) 
+            byteValue[1] = 0
+            value = int.from_bytes(byteValue, "big")            
+            sum = (sum + value) % 65535
+    sum = (sum + checksum)
     return sum 
 
-def handleClient(msg, clientCheckSum, conn):
+def handleClient(msg, clientCheckSum, sequentialNumber, conn):
     print("Message from client: " + str(msg.decode(FORMAT)))
-    print(f"checkSumReceiver: {checkSumReceiver(msg, clientCheckSum)}, must be equal to {int('0x1fffff000', 0)}")
+    print(f'Message sequential number: {sequentialNumber}')
+    checkSum = isCorrupted(msg, clientCheckSum)
+    if checkSum == int('0xFFFF', 0):
+        print("DATA NOT CORRUPTED, SENDING ACK...")
+        server.sendto(ACK.encode(), conn)
+    else:
+        print("CORRUPTED")
 
 
 print("Server ip is " + SERVER)
 print("Creating socket...")
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 print("Binding to " + str(ADDR[0]) + ", " + str(ADDR[1]))
 server.bind(ADDR)
 
-print("Starting receving connections")
 while True:
-    print("")
     print("Waiting client connction...")
     full_packet, conn = server.recvfrom(BUFFER_SIZE)
-    udp_header = full_packet[:8]
-    data = full_packet[8:]
-    udpHeader = struct.unpack("!II", udp_header)
-    newThead = threading.Thread(target=handleClient, args=(data, udpHeader[1], conn))
-    newThead.start()
-    print("")
+    udp_header = full_packet[:12]
+    data = full_packet[12:]
+    udpHeader = struct.unpack("!III", udp_header)
+    # newThead = threading.Thread(target=handleClient, args=(data, udpHeader[1], udpHeader[2], conn))
+    # newThead.start()
+    handleClient(data, udpHeader[1], udpHeader[2], conn)
