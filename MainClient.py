@@ -4,7 +4,7 @@ import time
 import common
 
 FORMAT = "utf-8"
-PORT = 5050
+PORT = 8080
 BUFFER_SIZE = 2048
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
@@ -14,6 +14,7 @@ WAIT_ACK = 1
 TIMEOUT = 2
 CORRUPT = 3
 DUPLICATE_ACK = 4
+WAIT_MESSAGE = 5
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(1.0)
@@ -45,6 +46,16 @@ while True:
         sent_message = input("Send message: ")
         send(sent_message, ADDR)
         current_state = WAIT_ACK
+    
+    elif current_state == WAIT_MESSAGE:
+        fullPacket, conn = client.recvfrom(BUFFER_SIZE)
+        data, header = decodeData(fullPacket)
+        checksum = header[1]
+        seq = header[2]
+        message = data.decode(FORMAT)
+        print(message)
+        if message:
+            current_state = WAIT_CALL
 
     elif current_state == WAIT_ACK:
         print("waiting for ACK " + str(current_sequence) + "...")
@@ -63,7 +74,7 @@ while True:
 
             else:
                 print("ACK " + str(current_sequence) + " RECIEVED")
-                current_state = WAIT_CALL
+                current_state = WAIT_MESSAGE
                 current_sequence = (current_sequence + 1) % 2
                 continue    
         except socket.timeout as e:
