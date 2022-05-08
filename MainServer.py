@@ -192,10 +192,12 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
                 nome = message
                 createTable(nome, numero_mesa)
                 state_0 = 0
+                send("Adicionado à mesa!", addr)
                 current_state = ESTADO_1
         elif current_state == ESTADO_1:
-            if state_1 == CONTA_INDIVIDUAL:
-                send("Bem-vindo. O que gostaria de fazer?", addr)
+            if state_1 == 0:
+                send("Bem-vindo. O que gostaria de fazer?\n1 - cardápio\n2 - pedido\n3 - conta individual\n4 - conta da mesa", addr)
+               
 
     
 def send(message, addr):
