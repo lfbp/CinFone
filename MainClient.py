@@ -41,10 +41,7 @@ def send(message, addr):
     checksumValue = common.generateCheckum(packet)
     header = struct.pack("!III", datalen, checksumValue, current_sequence)
     headerPlusMessage = header + packet
-    print("Send to ", addr)
     server.sendto(headerPlusMessage, addr)
-    print("Sent")
-
 
 def handleClient(msg, clientCheckSum, sequence_number, addr):
     global expected_sequence

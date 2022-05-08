@@ -63,7 +63,7 @@ class client:
         self.id = id 
         self.tableNumber = tableNumber
         self.addr = addr 
-        self.orderList = [orderList]
+        self.orderList = orderList
 
 class orderList: 
     def __init__(self, id, itemName, itemPrice): 
@@ -79,6 +79,7 @@ def createTable(name, tableNumber, addr):
     print("Created Table, ", tableNumber)
 
 def cardapio():
+    print("CARDAPIO")
     #enviar um item do cardápio por linha
     message = ""
     for item in cardapioItems:
@@ -100,17 +101,19 @@ def pedir(addr, numeroDoProduto):
 
     return "Produto não encontrado"
 
-def obterContaIndividual(socket):
+def obterContaIndividual(addr):
+    print("CONTA INDIVIDUAL")
+    message = ""
     for table in tableList:
         clientSum = 0
-        accountList = table.accountList
-        send("Nome: "+accountList.id, ADDR)
-        for account in accountList:
-            if account.socket == socket:
-                for order in account.orderList:
+        clients = table.clients
+        for client in clients:
+            if client.addr == addr:
+                for order in client.orderList:
                     clientSum += order.itemPrice
-                    send(order.itemName+" => R$"+order.itemPrice)
-                send("Total: R$"+clientSum)
+                    message += order.itemName+" => R$"+ str(order.itemPrice) + "\n"
+                message += "\nTotal: R$"+ str(clientSum)
+                return message
 
 def obterContaMesa():
     generalSum = 0
@@ -143,6 +146,8 @@ def getResponse():
 
     message = client_message.lower()
 
+    print("STATE: ", current_chatbot_state)
+
     if current_chatbot_state == PERGUNTAR_MESA:
         current_chatbot_state = RECEBER_MESA
         return "Digite sua mesa"
@@ -162,6 +167,8 @@ def getResponse():
         return menu_message
 
     elif current_chatbot_state == RECEBER_MENU:
+        print("RECEBER MENU")
+
         if(message == "1" or message == "cardapio" or message == "cardápio"):
             current_chatbot_state = RECEBER_MENU
             return cardapio()
@@ -170,11 +177,17 @@ def getResponse():
             current_chatbot_state = RECEBER_PEDIDO
             return "Digite o número do item desejado:"
 
-    elif current_chatbot_state == RECEBER_PEDIDO:
-        current_chatbot_state == RECEBER_MENU
-        return pedir(CLIENT_ADDR, message)
+        elif (message == "4" or message == "conta individual"):
+            current_chatbot_state = RECEBER_MENU
+            return obterContaIndividual(CLIENT_ADDR)
 
-        
+        else:
+            return "Não entendi..."
+
+    elif current_chatbot_state == RECEBER_PEDIDO:
+        print("RECEBER PEDIDO")
+        current_chatbot_state = RECEBER_MENU
+        return pedir(CLIENT_ADDR, message)
     
     else:
         return "ERRO"
