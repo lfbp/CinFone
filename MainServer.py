@@ -25,6 +25,7 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
     global last_acked_sequence
 
     print("Message from client: " + msg.decode(FORMAT))
+    message = msg.decode(FORMAT)
     print(f'Received Sequence: {sequence_number}')
     print(f'Expected Sequence: {expected_sequence}')
 
@@ -43,12 +44,27 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
         sendACK(addr, expected_sequence)
         last_acked_sequence = sequence_number
         expected_sequence = (sequence_number + 1) % 2
+        #LFBP: DEPOIS DE MANDAR A PORRA DO ACK, VOCÊ PODE MANDAR AS MENSAGENS DE RESPOSTA AO CLIENTE
+        #LFBP: É SÓ IR FAZEDO MAIS IF E MAIS ELSE AQUI EM BAIXO E IMPLEMENTAR AS REGRAS DE NEGÓCIO E TUDO MAIS
+        #LFBP: TEM LÁ NO PROJETO AS FUNÇÕES OBRIGATÓRIAS E A REGRA DE NEGÓCIO ASSOCIADA
+        if message == "Chefia":
+            send("Digite número da mesa e nome no formato: mesa,nome.\nExemplo: 16,Luis Felipe.", addr)
+        else:
+            send("O comando enviado não foi reconhecido.", addr)
 
 def sendACK(addr, sequence_number):
     packet = "ACK".encode()
     datalen = len(packet)
     checksumValue = common.generateCheckum(packet)
     header = struct.pack("!III", datalen, checksumValue, sequence_number)
+    headerPlusMessage = header + packet
+    server.sendto(headerPlusMessage, addr)
+
+def send(message, addr):
+    packet = message.encode()
+    datalen = len(packet)
+    checksumValue = common.generateCheckum(packet)
+    header = struct.pack("!III", datalen, checksumValue, 100)
     headerPlusMessage = header + packet
     server.sendto(headerPlusMessage, addr)
 
