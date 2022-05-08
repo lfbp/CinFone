@@ -117,9 +117,14 @@ def finalizarConta(socket):
         
 
 
-def handleStateZero(message):
+def handleStateZero(message, addr):
+    global state_0
+    global numero_mesa
+    global current_state
+    global nome
+
     if state_0 == 0:
-        send("Digite sua mesa: ", ADDR)
+        send("Digite sua mesa: ", addr)
         state_0 = RECEBER_MESA
     elif state_0 == RECEBER_MESA:
         numero_mesa = message
@@ -137,9 +142,10 @@ def handleStateOne(message):
     #elif state_1 == CARDAPIO:
 
 
-def handleChatbot(msgOption):
+def handleChatbot(msgOption, addr):
+    # send(msgOption, ADDR)
     if current_state == ESTADO_0:
-        handleStateZero(msgOption)
+        handleStateZero(msgOption, addr)
     elif current_state == ESTADO_1:
         handleStateOne(msgOption)
 
@@ -148,8 +154,13 @@ def handleChatbot(msgOption):
 def handleClient(msg, clientCheckSum, sequence_number, addr):
     global expected_sequence
     global last_acked_sequence
+    global state_0
+    global numero_mesa
+    global current_state
+    global nome
 
     print("Message from client: " + msg.decode(FORMAT))
+    message = msg.decode(FORMAT)
     print(f'Received Sequence: {sequence_number}')
     print(f'Expected Sequence: {expected_sequence}')
 
@@ -168,13 +179,31 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
         sendACK(addr, expected_sequence)
         last_acked_sequence = sequence_number
         expected_sequence = (sequence_number + 1) % 2
-        handleChatbot(msg.decode(FORMAT))
+      
+        if current_state == ESTADO_0:
+            if state_0 == 0:
+                send("Digite sua mesa: ", addr)
+                state_0 = RECEBER_MESA
+            elif state_0 == RECEBER_MESA:
+                numero_mesa = message
+                send("Digite seu nome: ", addr)
+                state_0 = RECEBER_NOME
+            elif state_0 == RECEBER_NOME:
+                nome = message
+                createTable(nome, numero_mesa)
+                state_0 = 0
+                current_state = ESTADO_1
+        elif current_state == ESTADO_1:
+            if state_1 == CONTA_INDIVIDUAL:
+                send("Bem-vindo. O que gostaria de fazer?", addr)
 
+    
 def send(message, addr):
+    global expected_sequence
     packet = message.encode()
     datalen = len(packet)
     checksumValue = common.generateCheckum(packet)
-    header = struct.pack("!III", datalen, checksumValue, sequence_number)
+    header = struct.pack("!III", datalen, checksumValue, expected_sequence)
     headerPlusMessage = header + packet
     server.sendto(headerPlusMessage, addr)
 
