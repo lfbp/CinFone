@@ -116,18 +116,21 @@ def obterContaIndividual(addr):
                 return message
 
 def obterContaMesa():
+    print("CONTA DA MESA")
     generalSum = 0
+    message = ""
     for table in tableList:
         clientSum = 0
-        accountList = table.accountList
-        send("Nome: "+accountList.id, ADDR)
-        for account in accountList:
-            for order in account.orderList:
+        clients = table.clients
+        for client in clients:
+            message += "| " + client.id + " |\n"
+            for order in client.orderList:
                 clientSum += order.itemPrice
-                send(order.itemName+" => R$"+order.itemPrice)
-            send("Total: R$"+clientSum)
+                message += order.itemName+" => R$"+ str(order.itemPrice) + "\n"
+            message += "Total: R$"+str(clientSum)+"\n"
             generalSum += clientSum
-    send("Total da mesa: R$"+generalSum)
+    message += "Total da mesa: R$"+str(generalSum)
+    return message
 
 def finalizarConta(socket):
     for table in tableList:
@@ -144,7 +147,7 @@ def getResponse():
     global nome
     global current_chatbot_state
 
-    message = client_message.lower()
+    message = client_message
 
     print("STATE: ", current_chatbot_state)
 
@@ -180,6 +183,10 @@ def getResponse():
         elif (message == "4" or message == "conta individual"):
             current_chatbot_state = RECEBER_MENU
             return obterContaIndividual(CLIENT_ADDR)
+
+        elif (message == "5" or message == "conta da mesa"):
+            current_chatbot_state = RECEBER_MENU
+            return obterContaMesa()
 
         else:
             return "Não entendi..."
