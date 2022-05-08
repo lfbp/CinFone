@@ -34,6 +34,136 @@ server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 print("Binding to " + str(SERVER_ADDR[0]) + ", " + str(SERVER_ADDR[1]))
 server.bind(SERVER_ADDR)
 
+
+##### CHATBOT BEGIN
+PERGUNTAR_MESA = 0
+RECEBER_MESA = 1
+RECEBER_NOME = 2
+PERGUNTAR_MENU = 3
+RECEBER_MENU = 4
+
+current_chatbot_state = PERGUNTAR_MESA
+
+numero_mesa = ""
+nome = ""
+
+tableList = []
+cardapio = [{"item": "Espetinho", "itemNumber": "1","price": 20.00}, {"item": "Espetinho", "itemNumber": "2","price": 20.00}]
+
+client_message = ""
+
+class table: 
+    def __init__(self, accountList, tableNumber): 
+        self.accountList = [accountList]
+        self.tableNumber = tableNumber
+
+class accountList: 
+    def __init__(self, id, tableNumber, socket, orderList): 
+        self.id = id 
+        self.tableNumber = tableNumber
+        self.socket = socket 
+        self.orderList = [orderList]
+
+class orderList: 
+    def __init__(self, id, itemName, itemPrice): 
+        self.id = id
+        self.itemName = itemName 
+        self.itemPrice = itemPrice
+
+def createTable(name, tableNumber):
+    global tableList
+    account = accountList(name, tableNumber, 1, [])
+    tableList.append(table([account], tableNumber))
+
+def cardapioMessage():
+    #enviar um item do cardápio por linha
+    message = ""
+    for item in cardapio:
+        message += item["itemNumber"]+"- "+item["item"]+" - R$"+str(item["price"])+"\n"
+    return message
+
+def pedirPedido(socket, message):
+    for table in tableList:
+        accountList = table.accountList
+        for account in accountList:
+            if account.socket == socket:
+                item = filter(lambda item: item.itemNumber == message, cardapio)
+                orderList = orderList(message, item.first.item, item.first.price)
+                account.orderList.append(orderList)
+
+def obterContaIndividual(socket):
+    for table in tableList:
+        clientSum = 0
+        accountList = table.accountList
+        send("Nome: "+accountList.id, ADDR)
+        for account in accountList:
+            if account.socket == socket:
+                for order in account.orderList:
+                    clientSum += order.itemPrice
+                    send(order.itemName+" => R$"+order.itemPrice)
+                send("Total: R$"+clientSum)
+
+def obterContaMesa():
+    generalSum = 0
+    for table in tableList:
+        clientSum = 0
+        accountList = table.accountList
+        send("Nome: "+accountList.id, ADDR)
+        for account in accountList:
+            for order in account.orderList:
+                clientSum += order.itemPrice
+                send(order.itemName+" => R$"+order.itemPrice)
+            send("Total: R$"+clientSum)
+            generalSum += clientSum
+    send("Total da mesa: R$"+generalSum)
+
+def finalizarConta(socket):
+    for table in tableList:
+        accountList = table.accountList
+        for account in accountList:
+            if account.socket == socket:
+                accountList.remove(account)
+
+menu_message = "Digite uma das opções a seguir (o número ou por extenso)\n1 - cardápio\n2 - pedido\n3 - conta individual\n4 - não fecho com robô, chame seu gerente\n5 - nada não, tava só testando\n6 - conta da mesa"
+
+def getResponse():
+    global client_message
+    global numero_mesa
+    global nome
+    global current_chatbot_state
+
+    message = client_message.lower()
+
+    if current_chatbot_state == PERGUNTAR_MESA:
+        current_chatbot_state = RECEBER_MESA
+        return "Digite sua mesa"
+
+    elif current_chatbot_state == RECEBER_MESA:
+        numero_mesa = message
+        current_chatbot_state = RECEBER_NOME
+        return "Digite seu nome: "
+
+    elif current_chatbot_state == RECEBER_NOME:
+        nome = message
+        createTable(nome, numero_mesa)
+        current_chatbot_state = RECEBER_MENU
+        return menu_message
+
+    elif current_chatbot_state == PERGUNTAR_MENU:
+        return menu_message
+
+    elif current_chatbot_state == RECEBER_MENU:
+        if(message == "1" or message == "cardapio" or message == "cardápio"):
+            current_chatbot_state = RECEBER_MENU
+            return cardapioMessage()
+
+
+    
+    else:
+        return "ERRO"
+
+##### CHATBOT END
+
 # Aux Functions
 def send(message, addr):
     packet = message.encode()
@@ -49,8 +179,10 @@ def send(message, addr):
 def handleClient(msg, clientCheckSum, sequence_number, addr):
     global expected_sequence
     global last_acked_sequence
+    global client_message
 
     print("Message from client: " + msg.decode(FORMAT))
+    client_message = msg.decode(FORMAT)
     print(f'Received Sequence: {sequence_number}')
     print(f'Expected Sequence: {expected_sequence}')
 
@@ -86,7 +218,7 @@ def decodeData(fullPacket):
 
 while True:
     if current_state == WAIT_CALL:
-        sent_message = input("Send message: ")
+        sent_message = getResponse()
         send(sent_message, CLIENT_ADDR)
         current_state = WAIT_ACK
 

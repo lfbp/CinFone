@@ -50,9 +50,7 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
     global expected_sequence
     global last_acked_sequence
 
-    print("Message from client: " + msg.decode(FORMAT))
-    print(f'Received Sequence: {sequence_number}')
-    print(f'Expected Sequence: {expected_sequence}')
+    print(msg.decode(FORMAT))
 
     if common.corrupted(msg, clientCheckSum):
         print("CORRUPTED, ACK Previous: ", last_acked_sequence)
@@ -88,7 +86,6 @@ while True:
         current_state = WAIT_ACK
 
     elif current_state == WAIT_RESPONSE:
-        print("\nWaiting server connection...")
         fullPacket, conn = server.recvfrom(BUFFER_SIZE)
         data, header = decodeData(fullPacket)
         checksum = header[1]
@@ -97,7 +94,6 @@ while True:
         current_state = WAIT_CALL
 
     elif current_state == WAIT_ACK:
-        print("waiting for ACK " + str(current_sequence) + "...")
         try:
             fullPacket, conn = server.recvfrom(BUFFER_SIZE)
             data, header = decodeData(fullPacket)
@@ -112,7 +108,6 @@ while True:
                 current_state = DUPLICATE_ACK
 
             else:
-                print("ACK " + str(current_sequence) + " RECIEVED")
                 current_state = WAIT_RESPONSE
                 current_sequence = (current_sequence + 1) % 2
                 continue    
