@@ -41,6 +41,7 @@ RECEBER_MESA = 1
 RECEBER_NOME = 2
 PERGUNTAR_MENU = 3
 RECEBER_MENU = 4
+RECEBER_PEDIDO = 5
 
 current_chatbot_state = PERGUNTAR_MESA
 
@@ -48,20 +49,20 @@ numero_mesa = ""
 nome = ""
 
 tableList = []
-cardapio = [{"item": "Espetinho", "itemNumber": "1","price": 20.00}, {"item": "Espetinho", "itemNumber": "2","price": 20.00}]
+cardapioItems = [{"item": "Espetinho", "itemNumber": "1","price": 20.00}, {"item": "Espetinho", "itemNumber": "2","price": 20.00}]
 
 client_message = ""
 
 class table: 
-    def __init__(self, accountList, tableNumber): 
-        self.accountList = [accountList]
+    def __init__(self, clients, tableNumber): 
+        self.clients = clients
         self.tableNumber = tableNumber
 
-class accountList: 
-    def __init__(self, id, tableNumber, socket, orderList): 
+class client: 
+    def __init__(self, id, tableNumber, addr, orderList): 
         self.id = id 
         self.tableNumber = tableNumber
-        self.socket = socket 
+        self.addr = addr 
         self.orderList = [orderList]
 
 class orderList: 
@@ -70,26 +71,34 @@ class orderList:
         self.itemName = itemName 
         self.itemPrice = itemPrice
 
-def createTable(name, tableNumber):
+def createTable(name, tableNumber, addr):
     global tableList
-    account = accountList(name, tableNumber, 1, [])
-    tableList.append(table([account], tableNumber))
+    created_client = client(name, tableNumber, addr, [])
+    created_table = table([created_client], tableNumber)
+    tableList.append(created_table)
+    print("Created Table, ", tableNumber)
 
-def cardapioMessage():
+def cardapio():
     #enviar um item do cardápio por linha
     message = ""
-    for item in cardapio:
+    for item in cardapioItems:
         message += item["itemNumber"]+"- "+item["item"]+" - R$"+str(item["price"])+"\n"
     return message
 
-def pedirPedido(socket, message):
+def pedir(addr, numeroDoProduto):
+    print("Procurando cliente")
     for table in tableList:
-        accountList = table.accountList
-        for account in accountList:
-            if account.socket == socket:
-                item = filter(lambda item: item.itemNumber == message, cardapio)
-                orderList = orderList(message, item.first.item, item.first.price)
-                account.orderList.append(orderList)
+        clients = table.clients
+        for client in clients:
+            if client.addr == addr:
+                print("Cliente encontrado")
+                product = next(filter(lambda item: item["itemNumber"] == numeroDoProduto, cardapioItems))
+                print(product)
+                created_orderList = orderList(message, product["item"], product["price"])
+                client.orderList.append(created_orderList)
+                return "Ok! Aqui está um " + product["item"]
+
+    return "Produto não encontrado"
 
 def obterContaIndividual(socket):
     for table in tableList:
@@ -124,7 +133,7 @@ def finalizarConta(socket):
             if account.socket == socket:
                 accountList.remove(account)
 
-menu_message = "Digite uma das opções a seguir (o número ou por extenso)\n1 - cardápio\n2 - pedido\n3 - conta individual\n4 - não fecho com robô, chame seu gerente\n5 - nada não, tava só testando\n6 - conta da mesa"
+menu_message = "Digite uma das opções a seguir (o número ou por extenso)\n1 - cardápio\n2 - pedir\n3 - pagar\n4 - conta individual\n5 - conta da mesa\n6 - levantar da mesa"
 
 def getResponse():
     global client_message
@@ -145,7 +154,7 @@ def getResponse():
 
     elif current_chatbot_state == RECEBER_NOME:
         nome = message
-        createTable(nome, numero_mesa)
+        createTable(nome, numero_mesa, CLIENT_ADDR)
         current_chatbot_state = RECEBER_MENU
         return menu_message
 
@@ -155,9 +164,17 @@ def getResponse():
     elif current_chatbot_state == RECEBER_MENU:
         if(message == "1" or message == "cardapio" or message == "cardápio"):
             current_chatbot_state = RECEBER_MENU
-            return cardapioMessage()
+            return cardapio()
+        
+        elif (message == "2" or message == "pedir"):
+            current_chatbot_state = RECEBER_PEDIDO
+            return "Digite o número do item desejado:"
 
+    elif current_chatbot_state == RECEBER_PEDIDO:
+        current_chatbot_state == RECEBER_MENU
+        return pedir(CLIENT_ADDR, message)
 
+        
     
     else:
         return "ERRO"
