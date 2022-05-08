@@ -26,6 +26,7 @@ ESTADO_1 = 1
 RECEBER_MESA = 1
 RECEBER_NOME = 2
 
+RECEBER_MENU = 7
 CONTA_INDIVIDUAL = 1
 CONTA_MESA = 2
 PAGAR = 3
@@ -65,13 +66,16 @@ class orderList:
         self.itemPrice = itemPrice
 
 def createTable(name, tableNumber):
+    global tableList
     account = accountList(name, tableNumber, 1, [])
     tableList.append(table([account], tableNumber))
 
 def enviarCardapio():
     #enviar um item do cardápio por linha
+    message = ""
     for item in cardapio:
-        send(item.itemNumber+"- "+item.item+" - R$"+item.price, ADDR)
+        message += item["itemNumber"]+"- "+item["item"]+" - R$"+str(item["price"])+"\n"
+    return message
 
 def pedirPedido(socket, message):
     for table in tableList:
@@ -155,9 +159,11 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
     global expected_sequence
     global last_acked_sequence
     global state_0
+    global state_1
     global numero_mesa
     global current_state
     global nome
+    global tableList
 
     print("Message from client: " + msg.decode(FORMAT))
     message = msg.decode(FORMAT)
@@ -197,6 +203,12 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
         elif current_state == ESTADO_1:
             if state_1 == 0:
                 send("Bem-vindo. O que gostaria de fazer?\n1 - cardápio\n2 - pedido\n3 - conta individual\n4 - conta da mesa", addr)
+                state_1 = RECEBER_MENU
+            elif state_1 == RECEBER_MENU:
+                if message == "1":
+                    send(enviarCardapio(addr), addr)
+                    state_1 = 0
+        
                
 
     
