@@ -132,12 +132,14 @@ def obterContaMesa():
     message += "Total da mesa: R$"+str(generalSum)
     return message
 
-def finalizarConta(socket):
+def levantar(addr):
     for table in tableList:
-        accountList = table.accountList
-        for account in accountList:
-            if account.socket == socket:
-                accountList.remove(account)
+        clients = table.clients
+        for client in clients:
+            if client.addr == addr:
+                clients.remove(client)
+    
+    return "Até mais..."
 
 menu_message = "Digite uma das opções a seguir (o número ou por extenso)\n1 - cardápio\n2 - pedir\n3 - pagar\n4 - conta individual\n5 - conta da mesa\n6 - levantar da mesa"
 
@@ -187,6 +189,10 @@ def getResponse():
         elif (message == "5" or message == "conta da mesa"):
             current_chatbot_state = RECEBER_MENU
             return obterContaMesa()
+
+        elif (message == "6" or message == "levantar da mesa"):
+            current_chatbot_state = PERGUNTAR_MESA
+            return levantar(CLIENT_ADDR)
 
         else:
             return "Não entendi..."

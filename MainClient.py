@@ -3,6 +3,8 @@ import threading
 import struct
 import common
 
+from datetime import datetime
+
 SERVER_PORT = 8080
 CLIENT_PORT = 5050
 
@@ -31,7 +33,7 @@ current_state = WAIT_CALL#WAIT_RESPONSE
 print("Server ip is " + HOST_NAME)
 print("Creating socket...")
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-print("Binding to " + str(CLIENT_ADDR[0]) + ", " + str(CLIENT_ADDR[1]))
+print("Binding to " + str(CLIENT_ADDR[0]) + ", " + str(CLIENT_ADDR[1])+"\n\n")
 server.bind(CLIENT_ADDR)
 
 # Aux Functions
@@ -47,7 +49,10 @@ def handleClient(msg, clientCheckSum, sequence_number, addr):
     global expected_sequence
     global last_acked_sequence
 
-    print(msg.decode(FORMAT))
+    now = datetime.now()
+    current_time = now.strftime("%H:%M")
+
+    print(current_time + " CINtofome " + msg.decode(FORMAT))
 
     if common.corrupted(msg, clientCheckSum):
         print("CORRUPTED, ACK Previous: ", last_acked_sequence)
@@ -78,7 +83,7 @@ def decodeData(fullPacket):
 
 while True:
     if current_state == WAIT_CALL:
-        sent_message = input("Send message: ")
+        sent_message = input("Mensagem: ")
         send(sent_message, SERVER_ADDR)
         current_state = WAIT_ACK
 
