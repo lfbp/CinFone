@@ -42,6 +42,7 @@ RECEBER_NOME = 2
 PERGUNTAR_MENU = 3
 RECEBER_MENU = 4
 RECEBER_PEDIDO = 5
+RECEBER_VALOR = 6
 
 current_chatbot_state = PERGUNTAR_MESA
 
@@ -49,7 +50,7 @@ numero_mesa = ""
 nome = ""
 
 tableList = []
-cardapioItems = [{"item": "Espetinho", "itemNumber": "1","price": 20.00}, {"item": "Espetinho", "itemNumber": "2","price": 20.00}]
+cardapioItems = [{"item": "Espetinho", "itemNumber": "1","price": 20.00}, {"item": "Bolinho", "itemNumber": "2","price": 5.00}]
 
 client_message = ""
 
@@ -64,6 +65,7 @@ class client:
         self.tableNumber = tableNumber
         self.addr = addr 
         self.orderList = orderList
+        self.valorPago = 0
 
 class orderList: 
     def __init__(self, id, itemName, itemPrice): 
@@ -141,6 +143,32 @@ def levantar(addr):
     
     return "Até mais..."
 
+def pagar(addr, value):
+    valor = int(value)
+    userSum = 0
+    print("PAGAR")
+    generalSum = 0
+
+    for table in tableList:
+        clients = table.clients
+        for client in clients:
+            clientSum = 0
+            for order in client.orderList:
+                clientSum += order.itemPrice
+            if client.addr == addr:
+                userSum = clientSum
+            generalSum += clientSum
+            
+    if valor < userSum:
+        return "Você não pode pagar um valor menor do que a sua conta"
+
+    elif valor > generalSum:
+        return "Você não pode pagar um valor maior do que o da mesa"
+
+    else:
+        return "Ok, pago!"    
+
+
 menu_message = "Digite uma das opções a seguir (o número ou por extenso)\n1 - cardápio\n2 - pedir\n3 - pagar\n4 - conta individual\n5 - conta da mesa\n6 - levantar da mesa"
 
 def getResponse():
@@ -186,6 +214,10 @@ def getResponse():
             current_chatbot_state = RECEBER_MENU
             return obterContaIndividual(CLIENT_ADDR)
 
+        elif (message == "3" or message == "pagar"):
+            current_chatbot_state = RECEBER_VALOR
+            return "Quanto você quer pagar?"
+
         elif (message == "5" or message == "conta da mesa"):
             current_chatbot_state = RECEBER_MENU
             return obterContaMesa()
@@ -201,6 +233,11 @@ def getResponse():
         print("RECEBER PEDIDO")
         current_chatbot_state = RECEBER_MENU
         return pedir(CLIENT_ADDR, message)
+
+    elif current_chatbot_state == RECEBER_VALOR:
+        print("PAGAR VALOR")
+        current_chatbot_state = RECEBER_MENU
+        return pagar(CLIENT_ADDR, message)
     
     else:
         return "ERRO"
